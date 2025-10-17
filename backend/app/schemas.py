@@ -2,12 +2,17 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 
 class Player(BaseModel):
-    id: str
+    id: int
     name: str
     team: str
     position: str
     price: float
     club_id: int
+
+class Rationale(BaseModel):
+    ep_next: float = Field(description="Expected points next gameweek")
+    availability: float = Field(description="Probability of playing next gameweek")
+    minutes_factor: float = Field(description="Factor affecting expected minutes played")
 
 class PlayerProjection(BaseModel):
     player: Player
@@ -16,10 +21,10 @@ class PlayerProjection(BaseModel):
     xpts_mean: float
     xpts_p95: float
     variance: float
-    rationale: Dict[str, float]
+    rationale: Rationale = Field(description="Rationale for the projection")
 
 class ProjectionsResponse(BaseModel):
-    gw: int
+    gameweek: int
     projections: List[PlayerProjection]
 
 class OptimizeRequest(BaseModel):
@@ -35,7 +40,7 @@ class XIPlayer(BaseModel):
     role: str
 
 class OptimizeResponse(BaseModel):
-    gw: int
+    gameweek: int
     total_cost: float
     expected_points: float
     xi: List[XIPlayer]
