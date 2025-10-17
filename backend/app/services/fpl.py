@@ -1,7 +1,8 @@
 import requests
 from typing import List, Dict, Any
+from app.utils.helper import safe_json_response
 
-FPL_BASE_URL = "https://fantasy.premierleague.com/bootstrap-static/"
+FPL_BASE_URL = "https://fantasy.premierleague.com/api/bootstrap-static/"
 
 POSITION_MAP = {
     1: "GK",
@@ -18,7 +19,7 @@ def fetch_boostrap() -> Dict[str, Any]:
     res = requests.get(FPL_BASE_URL, timeout=20)
     if not res.ok:
         raise FPLError(f"Failed to fetch FPL bootstrap data: {res.status_code} {res.reason}")
-    return res.json()
+    return safe_json_response(res)
 
 
 def normalize_players(data: Dict[str, Any]) -> List[Dict[str, Any]]:
