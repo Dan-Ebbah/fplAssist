@@ -54,12 +54,11 @@ def optimize_xi(projections: List[Dict], budget: float = 100.0, formation: str =
     probability.solve(pulp.PULP_CBC_CMD(msg=False))
 
     sel_ids = [i for i in ids if pulp.value(x[i]) > 0.5]
-    cap_id = next((i for i in ids if pulp.value(c[i]) > 0.5), sel_ids[0])
+    cap_id = next((i for i in ids if pulp.value(c[i]) > 0.5), sel_ids[0] if sel_ids else None)
 
     xi = [p for p in projections if p["player"]["id"] in sel_ids]
-    bench = sorted([p for p in projections if p["player"]["id"] not in sel_ids], key=lambda r: r["player"]["price"])[:4]
+    bench = sorted([p for p in projections if p["player"]["id"] not in sel_ids], key=lambda r: r["player"]["price"], reverse=True)[:4]
 
     total_cost = sum(price[i] for i in sel_ids)
     exp_pts = sum([points[i] for i in sel_ids]) + points.get(cap_id, 0)
     return xi, bench, cap_id, total_cost, exp_pts
-

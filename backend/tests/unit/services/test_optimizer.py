@@ -169,20 +169,40 @@ class TestOptimizer(unittest.TestCase):
         """Test if the optimizer respects the selected formation."""
         # Mock pulp.value to return 1 (selected) for certain players based on a 3-4-3 formation
         def side_effect(var):
-            # GK
-            if var == 1: return 1  # GK1 selected
-            # DEF - 3 selected
-            elif var in [3, 4, 5]: return 1
-            elif var in [6, 7]: return 0
-            # MID - 4 selected
-            elif var in [8, 9, 10, 11]: return 1
-            elif var == 12: return 0
-            # FWD - 3 selected
-            elif var in [13, 14, 15]: return 1
-            # Captain selection
-            elif var == 13: return 1  # FWD1 as captain
-            else: return 0
-        
+            # Extract player ID from the LpVariable name
+            # Variable names are like "sel_1", "sel_2", "cap_1", "cap_2", etc.
+            var_name = str(var.name) if hasattr(var, 'name') else str(var)
+
+            # Extract the ID from the variable name
+            if '_' in var_name:
+                var_id = int(var_name.split('_')[-1])
+            else:
+                return 0
+
+            # Handle selection variables
+            if 'sel' in var_name:
+                # GK - 1 selected
+                if var_id == 1:
+                    return 1
+                # DEF - 3 selected (3, 4, 5)
+                elif var_id in [3, 4, 5]:
+                    return 1
+                # MID - 4 selected (8, 9, 10, 11)
+                elif var_id in [8, 9, 10, 11]:
+                    return 1
+                # FWD - 3 selected (13, 14, 15)
+                elif var_id in [13, 14, 15]:
+                    return 1
+                else:
+                    return 0
+
+            # Handle captain variables
+            elif 'cap' in var_name:
+                # FWD1 (ID 13) as captain
+                return 1 if var_id == 13 else 0
+
+            return 0
+
         mock_pulp_value.side_effect = side_effect
         
         xi, bench, cap_id, total_cost, exp_pts = optimize_xi(
@@ -277,14 +297,15 @@ class TestOptimizer(unittest.TestCase):
     
     def test_budget_constraint(self):
         """Test if the budget constraint is respected."""
-        # Set a very low budget to force cheaper selections
+        # Set a lower budget to force cheaper selections
+        # Minimum possible cost is 79.0, so we use 80.0 to allow just above minimum
         xi, bench, cap_id, total_cost, exp_pts = optimize_xi(
-            self.test_projections, budget=60.0, formation="3-4-3"
+            self.test_projections, budget=80.0, formation="3-4-3"
         )
         
         # Check if total cost is under or equal to budget
-        self.assertLessEqual(total_cost, 60.0)
-        
+        self.assertLessEqual(total_cost, 80.0)
+
         # Set normal budget
         xi_normal, bench_normal, cap_id_normal, total_cost_normal, exp_pts_normal = optimize_xi(
             self.test_projections, budget=100.0, formation="3-4-3"
